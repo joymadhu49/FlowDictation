@@ -1,0 +1,116 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build app bundle
+        run: |
+          swift build -c release 2>&1
+
+          APP_NAME="FlowDictation"
+          BUILD_DIR="build"
+          APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
+          RESOURCES_DIR="Sources/FlowDictation/Resources"
+          BINARY_PATH=$(swift build -c release --show-bin-path)/"$APP_NAME"
+
+          rm -rf "$APP_BUNDLE"
+          mkdir -p "$APP_BUNDLE/Contents/MacOS"
+          mkdir -p "$APP_BUNDLE/Contents/Resources"
+
+          cp "$BINARY_PATH" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+          cp "$RESOURCES_DIR/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $APP_NAME" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
+
+          if [ -f "$RESOURCES_DIR/AppIcon.icns" ]; then
+            cp "$RESOURCES_DIR/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
+          fi
+
+          echo -n "APPL????" > "$APP_BUNDLE/Contents/PkgInfo"
+
+          # Ad-hoc sign
+          codesign --force --entitlements "$RESOURCES_DIR/FlowDictation.entitlements" --sign - "$APP_BUNDLE"
+          codesign --verify --verbose "$APP_BUNDLE"
+
+      - name: Create DMG
+        run: |
+          APP_NAME="FlowDictation"
+          BUILD_DIR="build"
+          DMG_TEMP="$BUILD_DIR/dmg_temp"
+          DMG_PATH="$BUILD_DIR/$APP_NAME.dmg"
+
+          rm -rf "$DMG_TEMP"
+          mkdir -p "$DMG_TEMP"
+          cp -R "$BUILD_DIR/$APP_NAME.app" "$DMG_TEMP/"
+          ln -s /Applications "$DMG_TEMP/Applications"
+
+          # Create double-click installer inside DMG
+          cat > "$DMG_TEMP/Install FlowDictation.command" << 'INSTALLER'
+          #!/bin/bash
+          set -e
+          APP_NAME="FlowDictation"
+          DMG_MOUNT="$(dirname "$0")"
+          INSTALL_DIR="/Applications"
+          clear
+          echo "============================================"
+          echo "   FlowDictation Installer"
+          echo "============================================"
+          echo ""
+          if [ -d "$INSTALL_DIR/$APP_NAME.app" ]; then
+            echo "Removing previous version..."
+            rm -rf "$INSTALL_DIR/$APP_NAME.app"
+          fi
+          echo "Installing $APP_NAME to Applications..."
+          cp -R "$DMG_MOUNT/$APP_NAME.app" "$INSTALL_DIR/"
+          echo "Configuring for first launch..."
+          xattr -cr "$INSTALL_DIR/$APP_NAME.app"
+          echo ""
+          echo "Installation complete! Launching $APP_NAME..."
+          open -a "$APP_NAME"
+          echo "You can close this window now."
+          sleep 2
+          INSTALLER
+          chmod +x "$DMG_TEMP/Install FlowDictation.command"
+
+          hdiutil create -volname "$APP_NAME" \
+            -srcfolder "$DMG_TEMP" \
+            -ov -format UDZO \
+            "$DMG_PATH"
+
+          rm -rf "$DMG_TEMP"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/FlowDictation.dmg
+          body: |
+            ## Install
+
+            1. Download **FlowDictation.dmg** below
+            2. Open the DMG
+            3. Double-click **"Install FlowDictation"**
+            4. If macOS asks "Are you sure you want to open it?" — click **Open**
+
+            That's it! The installer copies the app, configures it, and launches it automatically.
+
+            ### Alternative: Homebrew
+
+            ```bash
+            brew tap joymadhu49/tap
+            brew install --cask flowdictation
+            ```
+
+            ### Alternative: One-line install
+
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/joymadhu49/FlowDictation/main/scripts/install.sh | bash
+            ```
+          generate_release_notes: true
