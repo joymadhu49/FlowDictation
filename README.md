@@ -26,26 +26,33 @@ A lightweight macOS menu bar app for voice-to-text dictation powered by [Groq's 
 
 ## Installation
 
-### Download DMG (Recommended)
+### Quick Install (Recommended)
 
-1. Download the latest `FlowDictation.dmg` from [Releases](https://github.com/joymadhu49/FlowDictation/releases)
-2. Open the DMG
-3. Double-click **"Install FlowDictation"**
-4. If macOS asks "Are you sure you want to open it?" — click **Open**
+Open **Terminal** and paste:
 
-That's it! The installer copies the app to Applications, handles macOS security, and launches it.
+```bash
+curl -fsSL https://raw.githubusercontent.com/joymadhu49/FlowDictation/main/scripts/install.sh | bash
+```
+
+This downloads, installs to Applications, and launches automatically. No Gatekeeper issues.
+
+### Download DMG
+
+1. Download `FlowDictation.dmg` from [Releases](https://github.com/joymadhu49/FlowDictation/releases)
+2. Open the DMG, drag **FlowDictation** to **Applications**
+3. Open **Terminal** and run:
+   ```bash
+   xattr -cr /Applications/FlowDictation.app
+   ```
+4. Open FlowDictation from Applications
+
+> **Why step 3?** macOS blocks apps downloaded from the internet that aren't notarized by Apple. The `xattr -cr` command removes this block. This is standard for open-source macOS apps.
 
 ### Homebrew
 
 ```bash
 brew tap joymadhu49/tap
 brew install --cask flowdictation
-```
-
-### One-Line Install
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/joymadhu49/FlowDictation/main/scripts/install.sh | bash
 ```
 
 ### Build from Source
