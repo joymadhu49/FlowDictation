@@ -40,13 +40,12 @@ This downloads, installs to Applications, and launches automatically. No Gatekee
 
 1. Download `FlowDictation.dmg` from [Releases](https://github.com/joymadhu49/FlowDictation/releases)
 2. Open the DMG, drag **FlowDictation** to **Applications**
-3. Open **Terminal** and run:
-   ```bash
-   xattr -cr /Applications/FlowDictation.app
-   ```
-4. Open FlowDictation from Applications
+3. Go to **Applications** in Finder
+4. **Right-click** FlowDictation > click **Open**
+5. Click **"Open"** on the dialog that appears
+6. If still blocked: go to **System Settings > Privacy & Security** > scroll down > click **"Open Anyway"**
 
-> **Why step 3?** macOS blocks apps downloaded from the internet that aren't notarized by Apple. The `xattr -cr` command removes this block. This is standard for open-source macOS apps.
+> **Why the extra steps?** macOS blocks apps downloaded from the internet that aren't notarized by Apple. Right-click > Open bypasses this. Alternatively, run `xattr -cr /Applications/FlowDictation.app` in Terminal.
 
 ### Homebrew
 
